@@ -1,18 +1,17 @@
-var exec = require("cordova/exec");
+cordova.define("org.apache.cordova.xapkreader.XAPKReader", function(require, exports, module) { 
+    var exec = require("cordova/exec");
+    
+    var getQueue = [];
+    var inProgress = 0;
+        
+    
+                                                                                               
+ 
 
 module.exports = {
 
-    /**
-     * Get a file in expansion file and return it as data base64 encoded
-     *
-     * @param filename              The file name
-     * @param fileType              The file type (eg: "image/jpeg")
-     * @param successCallback       The callback to be called when the file is found.
-     *                                  successCallback()
-     * @param errorCallback         The callback to be called if there is an error.
-     *                                  errorCallback(int errorCode) - OPTIONAL
-     **/
-    get: function(filename, successCallback, errorCallback, fileType) {
+
+    getImmediate: function(filename, successCallback, errorCallback, fileType) {
         // only for android
         if (!navigator.userAgent.match(/Android/i)) {
             return successCallback(filename);
@@ -36,6 +35,48 @@ module.exports = {
         };
 
         cordova.exec(success, errorCallback, "XAPKReader", "get", [filename]);
+    },
+               
+    processQueue:  function() {
+        while (inProgress < 10) {
+            var e = getQueue.pop();
+            if (!e) break;
+            inProgress = inProgress + 1;
+            this.getImmediate(e.filename, e.successCallback, e.errorCallBack, e.fileType);      
+        }
+    },
+    
+    /**
+     * Get a file in expansion file and return it as data base64 encoded
+     *
+     * @param filename              The file name
+     * @param fileType              The file type (eg: "image/jpeg")
+     * @param successCallback       The callback to be called when the file is found.
+     *                                  successCallback()
+     * @param errorCallback         The callback to be called if there is an error.
+     *                                  errorCallback(int errorCode) - OPTIONAL
+     **/
+    get: function(filename, successCallback, errorCallBack, fileType) {
+        var self = this;
+        //this.getImmediate(filename, successCallback, errorCallBack, fileType);
+        getQueue.push({filename: filename,
+                       // works
+                       //successCallback: successCallback,
+                       //errorCallBack: errorCallBack,
+                       // works
+                       //successCallback: function (x) {successCallback(x);},
+                       //errorCallBack: function(x) {errorCallBack(x);},
+                    successCallback: function (x) {successCallback(x); self.getFinished();},
+                       errorCallBack: function(x) {errorCallBack(x); self.getFinished();},
+                       //successCallback: function(e) {this.getFinished(); return successCallback(e); }, 
+                       //errorCallBack: function (e) {this.getFinished(); return errorCallBack(e); },
+                       fileType: fileType});
+        this.processQueue();
+    },
+    
+    getFinished: function() {
+        inProgress = inProgress - 1;
+        this.processQueue();  
     },
 
     /**
@@ -85,3 +126,4 @@ module.exports = {
     }
 
 };
+});
