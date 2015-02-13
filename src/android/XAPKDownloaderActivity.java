@@ -44,6 +44,7 @@ public class XAPKDownloaderActivity extends Activity implements IDownloaderClien
         //if (true) return true;
         if (!Helpers.doesFileExist(this, fileName, fileSize, false)) {
             Log.e(LOG_TAG, "ExpansionAPKFile doesn't exist or has a wrong size (" + fileName + ").");
+            if (true) return true;
             return false;
         }
         return true;
